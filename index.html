@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Basic Blackjack (6-Deck Shoe)</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background: #0b1220; color: #e8eefc; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
+    h1 { margin: 0 0 10px; font-size: 22px; }
+    .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+    .pill { background: rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 999px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; }
+    .hand-title { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+    .hand-title h2 { margin: 0; font-size: 18px; }
+    .sub { opacity: 0.8; font-size: 12px; }
+    .cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 46px; }
+    .bjcard {
+      width: 44px; height: 62px; border-radius: 10px;
+      display: grid; place-items: center;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.14);
+      font-weight: 700;
+    }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; align-items: center; }
+    button {
+      border: 0; padding: 10px 12px; border-radius: 12px;
+      background: #2b66ff; color: white; font-weight: 700;
+      cursor: pointer;
+    }
+    button.secondary { background: rgba(255,255,255,0.10); }
+    button.danger { background: #ff3b3b; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    input[type="number"]{
+      width: 110px; padding: 10px 10px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.25); color: #e8eefc;
+      font-weight: 700;
+    }
+    .msg { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.06); }
+    .tiny { font-size: 12px; opacity: 0.85; margin-top: 6px; }
+    @media (max-width: 820px){ .row{ grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Blackjack — 6-Deck Shoe (Dealer Hits Soft 17)</h1>
+
+    <div class="bar">
+      <div class="pill">Bankroll: <b id="bankroll">$100</b></div>
+      <div class="pill">Current Bet: <b id="betDisplay">$0</b></div>
+      <div class="pill">Shoe: <b id="shoeCount">0</b> cards</div>
+      <div class="pill">Min Bet: <b>$5</b></div>
+      <button class="secondary" id="rebuyBtn" title="Add another $100 anytime">Rebuy +$100</button>
+      <button class="secondary" id="shuffleBtn" title="Reshuffle into a fresh 6-deck shoe">Shuffle Shoe</button>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <div class="hand-title">
+          <h2>Dealer</h2>
+          <div class="sub" id="dealerValueText">Value: ?</div>
+        </div>
+        <div class="cards" id="dealerCards"></div>
+      </div>
+
+      <div class="card">
+        <div class="hand-title">
+          <h2>You</h2>
+          <div class="sub" id="playerValueText">Value: 0</div>
+        </div>
+        <div class="cards" id="playerCards"></div>
+
+        <div class="controls">
+          <label class="pill">Bet $
+            <input id="betInput" type="number" min="5" step="5" value="5" />
+          </label>
+          <button id="dealBtn">Deal</button>
+          <button id="hitBtn" disabled>Hit</button>
+          <button id="standBtn" disabled>Stand</button>
+          <button id="doubleBtn" disabled>Double</button>
+        </div>
+
+        <div class="msg" id="message">Set a bet ($5 min) and click Deal.</div>
+        <div class="tiny">Rules: 6 decks • Dealer H17 • No side bets • Start $100 • Unlimited rebuys.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ---------- Shoe / Cards ----------
+  // ranks: A,2..10,J,Q,K
+  const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+  const SUITS = ["♠","♥","♦","♣"]; // cosmetic only
+
+  function cardValue(rank){
+    if(rank === "A") return 11;             // handle ace later
+    if(rank === "K" || rank === "Q" || rank === "J") return 10;
+    return Number(rank);
+  }
+
+  function buildShoe(decks=6){
+    const shoe = [];
+    for(let d=0; d<decks; d++){
+      for(const s of SUITS){
+        for(const r of RANKS){
+          shoe.push({ r, s });
+        }
+      }
+    }
+    return shoe;
+  }
+
+  function shuffle(arr){
+    for(let i=arr.length-1; i>0; i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  // ---------- Hand scoring (soft totals) ----------
+  function handTotals(hand){
+    // Returns {best, isSoft, raw, aces}
+    let total = 0;
+    let aces = 0;
+    for(const c of hand){
+      total += cardValue(c.r);
+      if(c.r === "A") aces++;
+    }
+    // Reduce Aces from 11 to 1 as needed
+    let soft = aces > 0;
+    while(total > 21 && aces > 0){
+      total -= 10; // convert one Ace from 11 to 1
+      aces--;
+    }
+    // If we had aces and none were reduced => still soft
+    // If we reduced all aces => not soft
+    // But if at least one ace still counted as 11, it's soft.
+    const isSoft = hand.some(c => c.r === "A") && (total <= 21) && (() => {
+      // check if any ace is effectively 11
+      // recompute: if adding 10 would still be <=21, that means at least one ace could be 11
+      // But that's not exact; easiest: compute minimal total (all aces as 1) then see if +10 <=21 and ace exists
+      let minTotal = 0;
+      let aceCount = 0;
+      for(const c of hand){
+        if(c.r === "A"){ aceCount++; minTotal += 1; }
+        else minTotal += cardValue(c.r);
+      }
+      return aceCount > 0 && (minTotal + 10) <= 21;
+    })();
+
+    return { best: total, isSoft };
+  }
+
+  function isBlackjack(hand){
+    if(hand.length !== 2) return false;
+    const ranks = hand.map(c => c.r);
+    const hasAce = ranks.includes("A");
+    const hasTen = ranks.some(r => r==="10" || r==="J" || r==="Q" || r==="K");
+    return hasAce && hasTen;
+  }
+
+  // Dealer hits soft 17
+  function dealerShouldHit(hand){
+    const t = handTotals(hand);
+    if(t.best < 17) return true;
+    if(t.best === 17 && t.isSoft) return true; // H17
+    return false;
+  }
+
+  // ---------- State ----------
+  let shoe = [];
+  let bankroll = 100;
+  let currentBet = 0;
+
+  let playerHand = [];
+  let dealerHand = [];
+  let inRound = false;
+  let dealerHoleHidden = true;
+  let doubled = false;
+
+  // ---------- UI ----------
+  const bankrollEl = document.getElementById("bankroll");
+  const betDisplayEl = document.getElementById("betDisplay");
+  const shoeCountEl = document.getElementById("shoeCount");
+
+  const dealerCardsEl = document.getElementById("dealerCards");
+  const playerCardsEl = document.getElementById("playerCards");
+  const dealerValueTextEl = document.getElementById("dealerValueText");
+  const playerValueTextEl = document.getElementById("playerValueText");
+
+  const betInput = document.getElementById("betInput");
+  const dealBtn = document.getElementById("dealBtn");
+  const hitBtn = document.getElementById("hitBtn");
+  const standBtn = document.getElementById("standBtn");
+  const doubleBtn = document.getElementById("doubleBtn");
+  const msgEl = document.getElementById("message");
+
+  const rebuyBtn = document.getElementById("rebuyBtn");
+  const shuffleBtn = document.getElementById("shuffleBtn");
+
+  function fmtMoney(n){ return `$${n}`; }
+
+  function setMessage(text){ msgEl.textContent = text; }
+
+  function updateTopBar(){
+    bankrollEl.textContent = fmtMoney(bankroll);
+    betDisplayEl.textContent = fmtMoney(currentBet);
+    shoeCountEl.textContent = shoe.length;
+  }
+
+  function renderCards(container, hand, {hideFirst=false}={}){
+    container.innerHTML = "";
+    hand.forEach((c, i) => {
+      const div = document.createElement("div");
+      div.className = "bjcard";
+      if(hideFirst && i === 1){ // hide dealer hole card (second card)
+        div.textContent = "🂠";
+        div.title = "Hidden";
+      } else {
+        div.textContent = `${c.r}${c.s}`;
+        div.title = `${c.r}${c.s}`;
+      }
+      container.appendChild(div);
+    });
+  }
+
+  function updateValues(){
+    // Player always visible
+    const pt = handTotals(playerHand);
+    playerValueTextEl.textContent = `Value: ${pt.best}${pt.isSoft ? " (soft)" : ""}`;
+
+    // Dealer depends on hidden hole
+    if(dealerHoleHidden && dealerHand.length >= 2){
+      // only show first card value
+      const first = dealerHand[0];
+      const v = cardValue(first.r);
+      dealerValueTextEl.textContent = `Value: ${first.r === "A" ? "11/1" : v} (upcard)`;
+    } else {
+      const dt = handTotals(dealerHand);
+      dealerValueTextEl.textContent = `Value: ${dt.best}${dt.isSoft ? " (soft)" : ""}`;
+    }
+  }
+
+  function updateButtons(){
+    const canAct = inRound;
+    hitBtn.disabled = !canAct;
+    standBtn.disabled = !canAct;
+
+    // Double: only on first decision (2 cards), not after hit, and must afford extra bet
+    const canDouble = inRound && playerHand.length === 2 && !doubled && bankroll >= currentBet;
+    doubleBtn.disabled = !canDouble;
+
+    // Deal only when not in round
+    dealBtn.disabled = inRound;
+    betInput.disabled = inRound;
+  }
+
+  function redraw(){
+    renderCards(playerCardsEl, playerHand);
+    renderCards(dealerCardsEl, dealerHand, { hideFirst: dealerHoleHidden });
+    updateValues();
+    updateTopBar();
+    updateButtons();
+  }
+
+  // ---------- Game flow ----------
+  function ensureShoe(){
+    if(shoe.length < 52){ // simple cut card: reshuffle when low
+      shoe = shuffle(buildShoe(6));
+      setMessage("Shuffled a fresh 6-deck shoe.");
+    }
+  }
+
+  function drawCard(){
+    ensureShoe();
+    return shoe.pop();
+  }
+
+  function startNewRound(){
+    if(inRound) return;
+
+    const bet = Number(betInput.value || 0);
+
+    if(!Number.isFinite(bet) || bet < 5 || bet % 5 !== 0){
+      setMessage("Bet must be at least $5 and in $5 increments.");
+      return;
+    }
+    if(bet > bankroll){
+      setMessage("Not enough bankroll for that bet. Use Rebuy or lower the bet.");
+      return;
+    }
+
+    currentBet = bet;
+    bankroll -= bet;
+
+    playerHand = [];
+    dealerHand = [];
+    doubled = false;
+
+    dealerHoleHidden = true;
+    inRound = true;
+
+    // initial deal: player, dealer, player, dealer
+    playerHand.push(drawCard());
+    dealerHand.push(drawCard());
+    playerHand.push(drawCard());
+    dealerHand.push(drawCard());
+
+    // check naturals
+    const pBJ = isBlackjack(playerHand);
+    const dBJ = isBlackjack(dealerHand);
+
+    redraw();
+
+    if(pBJ || dBJ){
+      dealerHoleHidden = false;
+      redraw();
+
+      if(pBJ && dBJ){
+        // push
+        bankroll += currentBet; // return bet
+        setMessage("Push: both have Blackjack.");
+      } else if(pBJ){
+        // blackjack pays 3:2
+        const win = Math.floor(currentBet * 1.5);
+        bankroll += currentBet + win;
+        setMessage(`Blackjack! You win ${fmtMoney(win)} (3:2).`);
+      } else {
+        setMessage("Dealer has Blackjack. You lose.");
+      }
+      endRound();
+      return;
+    }
+
+    setMessage("Your move.");
+    redraw();
+  }
+
+  function playerHit(){
+    if(!inRound) return;
+    playerHand.push(drawCard());
+    redraw();
+
+    const pt = handTotals(playerHand);
+    if(pt.best > 21){
+      dealerHoleHidden = false;
+      setMessage("Bust. You lose.");
+      redraw();
+      endRound();
+      return;
+    }
+  }
+
+  function playerStand(){
+    if(!inRound) return;
+    dealerPlayAndResolve();
+  }
+
+  function playerDouble(){
+    if(!inRound) return;
+    if(playerHand.length !== 2) return;
+    if(bankroll < currentBet) return;
+
+    bankroll -= currentBet;
+    currentBet *= 2;
+    doubled = true;
+
+    playerHand.push(drawCard());
+    redraw();
+
+    const pt = handTotals(playerHand);
+    if(pt.best > 21){
+      dealerHoleHidden = false;
+      setMessage("You doubled and busted. You lose.");
+      redraw();
+      endRound();
+      return;
+    }
+
+    dealerPlayAndResolve();
+  }
+
+  function dealerPlayAndResolve(){
+    dealerHoleHidden = false;
+    redraw();
+
+    // Dealer draws per H17
+    while(dealerShouldHit(dealerHand)){
+      dealerHand.push(drawCard());
+      redraw();
+    }
+
+    const pt = handTotals(playerHand).best;
+    const dt = handTotals(dealerHand).best;
+
+    if(dt > 21){
+      // player wins
+      bankroll += currentBet * 2;
+      setMessage(`Dealer busts (${dt}). You win ${fmtMoney(currentBet)}.`);
+      endRound();
+      return;
+    }
+
+    if(pt > dt){
+      bankroll += currentBet * 2;
+      setMessage(`You win ${fmtMoney(currentBet)}. (${pt} vs ${dt})`);
+    } else if(pt < dt){
+      setMessage(`You lose. (${pt} vs ${dt})`);
+    } else {
+      bankroll += currentBet; // push returns bet
+      setMessage(`Push. (${pt} vs ${dt})`);
+    }
+
+    endRound();
+  }
+
+  function endRound(){
+    inRound = false;
+    // keep currentBet for display until next deal; set to 0 after a moment for clarity
+    setTimeout(() => {
+      currentBet = 0;
+      redraw();
+    }, 350);
+    redraw();
+  }
+
+  // ---------- Buttons ----------
+  dealBtn.addEventListener("click", startNewRound);
+  hitBtn.addEventListener("click", playerHit);
+  standBtn.addEventListener("click", playerStand);
+  doubleBtn.addEventListener("click", playerDouble);
+
+  rebuyBtn.addEventListener("click", () => {
+    bankroll += 100;
+    setMessage("Rebuy added: +$100.");
+    redraw();
+  });
+
+  shuffleBtn.addEventListener("click", () => {
+    shoe = shuffle(buildShoe(6));
+    setMessage("Shoe shuffled (fresh 6 decks).");
+    redraw();
+  });
+
+  // ---------- Init ----------
+  shoe = shuffle(buildShoe(6));
+  playerHand = [];
+  dealerHand = [];
+  currentBet = 0;
+  setMessage("Set a bet ($5 min) and click Deal.");
+  redraw();
+})();
+</script>
+</body>
+</html>

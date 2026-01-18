@@ -2,89 +2,305 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Basic Blackjack (6-Deck Shoe)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Blackjack — 6-Deck Shoe (H17)</title>
   <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    body { margin: 0; background: #0b1220; color: #e8eefc; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
-    h1 { margin: 0 0 10px; font-size: 22px; }
-    .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
-    .pill { background: rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 999px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; }
-    .hand-title { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-    .hand-title h2 { margin: 0; font-size: 18px; }
-    .sub { opacity: 0.8; font-size: 12px; }
-    .cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; min-height: 46px; }
-    .bjcard {
-      width: 44px; height: 62px; border-radius: 10px;
-      display: grid; place-items: center;
-      background: rgba(255,255,255,0.10);
-      border: 1px solid rgba(255,255,255,0.14);
-      font-weight: 700;
+    :root{
+      --bg:#0b1220;
+      --panel: rgba(255,255,255,0.07);
+      --panel2: rgba(255,255,255,0.10);
+      --stroke: rgba(255,255,255,0.12);
+      --text:#e8eefc;
+      --muted: rgba(232,238,252,0.78);
+      --btn:#2b66ff;
+      --btn2: rgba(255,255,255,0.10);
+      --danger:#ff3b3b;
+
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
-    .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; align-items: center; }
-    button {
-      border: 0; padding: 10px 12px; border-radius: 12px;
-      background: #2b66ff; color: white; font-weight: 700;
-      cursor: pointer;
+
+    body{
+      margin:0;
+      background: radial-gradient(1200px 700px at 50% -20%, rgba(43,102,255,0.18), transparent 60%),
+                  radial-gradient(1000px 600px at 90% 10%, rgba(255,255,255,0.08), transparent 60%),
+                  var(--bg);
+      color: var(--text);
     }
-    button.secondary { background: rgba(255,255,255,0.10); }
-    button.danger { background: #ff3b3b; }
-    button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .wrap{
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 14px 14px 24px;
+    }
+
+    .title{
+      display:flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap:12px;
+      margin: 6px 0 10px;
+    }
+    h1{
+      margin:0;
+      font-size: 18px;
+      letter-spacing: 0.2px;
+    }
+    .subtitle{
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .status{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .pill{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .pill b{ color: var(--text); }
+
+    .panel{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .panelHead{
+      display:flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap:10px;
+      margin-bottom: 8px;
+    }
+    .panelHead h2{
+      margin:0;
+      font-size: 15px;
+    }
+    .valueText{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .cardsRow{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 74px;
+      align-items: center;
+      padding: 6px 0 2px;
+    }
+
+    .bjcard{
+      width: 46px;
+      height: 66px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: var(--panel2);
+      border: 1px solid rgba(255,255,255,0.16);
+      font-weight: 800;
+      font-size: 15px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+      user-select: none;
+    }
+
+    .hands{
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .handBox{
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: rgba(0,0,0,0.12);
+      padding: 10px;
+    }
+    .handBox.active{
+      outline: 2px solid rgba(43,102,255,0.55);
+      background: rgba(43,102,255,0.08);
+    }
+    .handTop{
+      display:flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap:10px;
+      margin-bottom: 6px;
+    }
+    .handLabel{
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .handMeta{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .handCards{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 70px;
+      align-items: center;
+    }
+
+    .controls{
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .betRow{
+      display:flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
     input[type="number"]{
-      width: 110px; padding: 10px 10px; border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(0,0,0,0.25); color: #e8eefc;
-      font-weight: 700;
+      width: 120px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(0,0,0,0.25);
+      color: var(--text);
+      font-weight: 800;
+      font-size: 14px;
     }
-    .msg { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.06); }
-    .tiny { font-size: 12px; opacity: 0.85; margin-top: 6px; }
-    @media (max-width: 820px){ .row{ grid-template-columns: 1fr; } }
+
+    .btnRow{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    button{
+      border: 0;
+      padding: 14px 12px;
+      border-radius: 14px;
+      background: var(--btn);
+      color: white;
+      font-weight: 900;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.28);
+      user-select: none;
+    }
+    button.secondary{
+      background: var(--btn2);
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: none;
+    }
+    button.danger{ background: var(--danger); }
+    button:disabled{
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .msg{
+      margin-top: 10px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text);
+      line-height: 1.25;
+    }
+    .tiny{
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    .footerBtns{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .footerBtns button{
+      padding: 10px 12px;
+      font-size: 13px;
+      border-radius: 12px;
+    }
+
+    /* Slightly larger on wide screens */
+    @media (min-width: 700px){
+      .wrap{ max-width: 620px; }
+      h1{ font-size: 20px; }
+      .bjcard{ width: 50px; height: 72px; }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Blackjack — 6-Deck Shoe (Dealer Hits Soft 17)</h1>
-
-    <div class="bar">
-      <div class="pill">Bankroll: <b id="bankroll">$100</b></div>
-      <div class="pill">Current Bet: <b id="betDisplay">$0</b></div>
-      <div class="pill">Shoe: <b id="shoeCount">0</b> cards</div>
-      <div class="pill">Min Bet: <b>$5</b></div>
-      <button class="secondary" id="rebuyBtn" title="Add another $100 anytime">Rebuy +$100</button>
-      <button class="secondary" id="shuffleBtn" title="Reshuffle into a fresh 6-deck shoe">Shuffle Shoe</button>
+    <div class="title">
+      <h1>Blackjack — 6-Deck Shoe</h1>
+      <div class="subtitle">Dealer hits soft 17 (H17)</div>
     </div>
 
-    <div class="row">
-      <div class="card">
-        <div class="hand-title">
-          <h2>Dealer</h2>
-          <div class="sub" id="dealerValueText">Value: ?</div>
-        </div>
-        <div class="cards" id="dealerCards"></div>
+    <div class="status">
+      <div class="pill">Bankroll: <b id="bankroll">$100</b></div>
+      <div class="pill">In Play: <b id="betDisplay">$0</b></div>
+      <div class="pill">Shoe: <b id="shoeCount">312</b> cards</div>
+      <div class="pill">Min Bet: <b>$5</b></div>
+    </div>
+
+    <div class="panel" id="dealerPanel">
+      <div class="panelHead">
+        <h2>Dealer</h2>
+        <div class="valueText" id="dealerValueText">Value: ?</div>
+      </div>
+      <div class="cardsRow" id="dealerCards"></div>
+    </div>
+
+    <div class="panel" id="playerPanel">
+      <div class="panelHead">
+        <h2>You</h2>
+        <div class="valueText" id="roundStateText">Waiting to deal…</div>
       </div>
 
-      <div class="card">
-        <div class="hand-title">
-          <h2>You</h2>
-          <div class="sub" id="playerValueText">Value: 0</div>
-        </div>
-        <div class="cards" id="playerCards"></div>
+      <div class="hands" id="handsWrap"></div>
 
-        <div class="controls">
-          <label class="pill">Bet $
+      <div class="controls">
+        <div class="betRow">
+          <label class="pill" style="display:flex; align-items:center; gap:8px;">
+            Bet $
             <input id="betInput" type="number" min="5" step="5" value="5" />
           </label>
-          <button id="dealBtn">Deal</button>
-          <button id="hitBtn" disabled>Hit</button>
-          <button id="standBtn" disabled>Stand</button>
-          <button id="doubleBtn" disabled>Double</button>
+          <button class="secondary" id="dealBtn">Deal</button>
         </div>
 
-        <div class="msg" id="message">Set a bet ($5 min) and click Deal.</div>
-        <div class="tiny">Rules: 6 decks • Dealer H17 • No side bets • Start $100 • Unlimited rebuys.</div>
+        <div class="btnRow">
+          <button id="hitBtn" disabled>Hit</button>
+          <button id="standBtn" disabled>Stand</button>
+          <button id="doubleBtn" class="secondary" disabled>Double</button>
+          <button id="splitBtn" class="secondary" disabled>Split</button>
+        </div>
+
+        <div class="msg" id="message">Set a bet ($5 min) and tap Deal.</div>
+        <div class="tiny">
+          Rules: 6 decks • Dealer H17 • Start $100 • Unlimited rebuys • No side bets.
+          <br/>Split: one split only (no resplit). Blackjack pays 3:2 only on the original 2-card deal (not after a split).
+        </div>
+
+        <div class="footerBtns">
+          <button class="secondary" id="rebuyBtn" title="Add another $100 anytime">Rebuy +$100</button>
+          <button class="secondary" id="shuffleBtn" title="Reshuffle into a fresh 6-deck shoe">Shuffle Shoe</button>
+        </div>
       </div>
     </div>
   </div>
@@ -92,12 +308,11 @@
 <script>
 (() => {
   // ---------- Shoe / Cards ----------
-  // ranks: A,2..10,J,Q,K
   const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-  const SUITS = ["♠","♥","♦","♣"]; // cosmetic only
+  const SUITS = ["♠","♥","♦","♣"]; // cosmetic
 
   function cardValue(rank){
-    if(rank === "A") return 11;             // handle ace later
+    if(rank === "A") return 11;
     if(rank === "K" || rank === "Q" || rank === "J") return 10;
     return Number(rank);
   }
@@ -122,37 +337,26 @@
     return arr;
   }
 
-  // ---------- Hand scoring (soft totals) ----------
+  // ---------- Hand scoring ----------
   function handTotals(hand){
-    // Returns {best, isSoft, raw, aces}
     let total = 0;
     let aces = 0;
     for(const c of hand){
       total += cardValue(c.r);
       if(c.r === "A") aces++;
     }
-    // Reduce Aces from 11 to 1 as needed
-    let soft = aces > 0;
     while(total > 21 && aces > 0){
-      total -= 10; // convert one Ace from 11 to 1
+      total -= 10;
       aces--;
     }
-    // If we had aces and none were reduced => still soft
-    // If we reduced all aces => not soft
-    // But if at least one ace still counted as 11, it's soft.
-    const isSoft = hand.some(c => c.r === "A") && (total <= 21) && (() => {
-      // check if any ace is effectively 11
-      // recompute: if adding 10 would still be <=21, that means at least one ace could be 11
-      // But that's not exact; easiest: compute minimal total (all aces as 1) then see if +10 <=21 and ace exists
-      let minTotal = 0;
-      let aceCount = 0;
-      for(const c of hand){
-        if(c.r === "A"){ aceCount++; minTotal += 1; }
-        else minTotal += cardValue(c.r);
-      }
-      return aceCount > 0 && (minTotal + 10) <= 21;
-    })();
-
+    // soft if at least one ace can still be 11 without bust
+    const hasAce = hand.some(c => c.r === "A");
+    let minTotal = 0, aceCount = 0;
+    for(const c of hand){
+      if(c.r === "A"){ aceCount++; minTotal += 1; }
+      else minTotal += cardValue(c.r);
+    }
+    const isSoft = hasAce && aceCount > 0 && (minTotal + 10) <= 21;
     return { best: total, isSoft };
   }
 
@@ -164,7 +368,6 @@
     return hasAce && hasTen;
   }
 
-  // Dealer hits soft 17
   function dealerShouldHit(hand){
     const t = handTotals(hand);
     if(t.best < 17) return true;
@@ -175,13 +378,20 @@
   // ---------- State ----------
   let shoe = [];
   let bankroll = 100;
-  let currentBet = 0;
 
-  let playerHand = [];
+  // Dealer
   let dealerHand = [];
-  let inRound = false;
   let dealerHoleHidden = true;
-  let doubled = false;
+
+  // Player hands (supports split)
+  // hand object: { cards:[], bet:number, done:boolean, doubled:boolean, busted:boolean }
+  let hands = [];
+  let activeHand = 0;
+  let inRound = false;
+  let splitUsed = false;
+
+  // Base bet (per hand initially)
+  let baseBet = 0;
 
   // ---------- UI ----------
   const bankrollEl = document.getElementById("bankroll");
@@ -189,88 +399,27 @@
   const shoeCountEl = document.getElementById("shoeCount");
 
   const dealerCardsEl = document.getElementById("dealerCards");
-  const playerCardsEl = document.getElementById("playerCards");
   const dealerValueTextEl = document.getElementById("dealerValueText");
-  const playerValueTextEl = document.getElementById("playerValueText");
+
+  const handsWrapEl = document.getElementById("handsWrap");
+  const roundStateTextEl = document.getElementById("roundStateText");
 
   const betInput = document.getElementById("betInput");
   const dealBtn = document.getElementById("dealBtn");
   const hitBtn = document.getElementById("hitBtn");
   const standBtn = document.getElementById("standBtn");
   const doubleBtn = document.getElementById("doubleBtn");
-  const msgEl = document.getElementById("message");
+  const splitBtn = document.getElementById("splitBtn");
 
+  const msgEl = document.getElementById("message");
   const rebuyBtn = document.getElementById("rebuyBtn");
   const shuffleBtn = document.getElementById("shuffleBtn");
 
   function fmtMoney(n){ return `$${n}`; }
+  function setMessage(t){ msgEl.textContent = t; }
 
-  function setMessage(text){ msgEl.textContent = text; }
-
-  function updateTopBar(){
-    bankrollEl.textContent = fmtMoney(bankroll);
-    betDisplayEl.textContent = fmtMoney(currentBet);
-    shoeCountEl.textContent = shoe.length;
-  }
-
-  function renderCards(container, hand, {hideFirst=false}={}){
-    container.innerHTML = "";
-    hand.forEach((c, i) => {
-      const div = document.createElement("div");
-      div.className = "bjcard";
-      if(hideFirst && i === 1){ // hide dealer hole card (second card)
-        div.textContent = "🂠";
-        div.title = "Hidden";
-      } else {
-        div.textContent = `${c.r}${c.s}`;
-        div.title = `${c.r}${c.s}`;
-      }
-      container.appendChild(div);
-    });
-  }
-
-  function updateValues(){
-    // Player always visible
-    const pt = handTotals(playerHand);
-    playerValueTextEl.textContent = `Value: ${pt.best}${pt.isSoft ? " (soft)" : ""}`;
-
-    // Dealer depends on hidden hole
-    if(dealerHoleHidden && dealerHand.length >= 2){
-      // only show first card value
-      const first = dealerHand[0];
-      const v = cardValue(first.r);
-      dealerValueTextEl.textContent = `Value: ${first.r === "A" ? "11/1" : v} (upcard)`;
-    } else {
-      const dt = handTotals(dealerHand);
-      dealerValueTextEl.textContent = `Value: ${dt.best}${dt.isSoft ? " (soft)" : ""}`;
-    }
-  }
-
-  function updateButtons(){
-    const canAct = inRound;
-    hitBtn.disabled = !canAct;
-    standBtn.disabled = !canAct;
-
-    // Double: only on first decision (2 cards), not after hit, and must afford extra bet
-    const canDouble = inRound && playerHand.length === 2 && !doubled && bankroll >= currentBet;
-    doubleBtn.disabled = !canDouble;
-
-    // Deal only when not in round
-    dealBtn.disabled = inRound;
-    betInput.disabled = inRound;
-  }
-
-  function redraw(){
-    renderCards(playerCardsEl, playerHand);
-    renderCards(dealerCardsEl, dealerHand, { hideFirst: dealerHoleHidden });
-    updateValues();
-    updateTopBar();
-    updateButtons();
-  }
-
-  // ---------- Game flow ----------
   function ensureShoe(){
-    if(shoe.length < 52){ // simple cut card: reshuffle when low
+    if(shoe.length < 52){
       shoe = shuffle(buildShoe(6));
       setMessage("Shuffled a fresh 6-deck shoe.");
     }
@@ -281,11 +430,153 @@
     return shoe.pop();
   }
 
+  function updateTopBar(){
+    bankrollEl.textContent = fmtMoney(bankroll);
+    shoeCountEl.textContent = shoe.length;
+
+    // "In Play" = sum of all current hand bets in this round (if any)
+    const inPlay = inRound ? hands.reduce((a,h)=>a + (h.bet||0), 0) : 0;
+    betDisplayEl.textContent = fmtMoney(inPlay);
+  }
+
+  function renderDealer(){
+    dealerCardsEl.innerHTML = "";
+    dealerHand.forEach((c, i) => {
+      const div = document.createElement("div");
+      div.className = "bjcard";
+      if(dealerHoleHidden && i === 1){
+        div.textContent = "🂠";
+        div.title = "Hidden";
+      } else {
+        div.textContent = `${c.r}${c.s}`;
+        div.title = `${c.r}${c.s}`;
+      }
+      dealerCardsEl.appendChild(div);
+    });
+
+    if(dealerHoleHidden && dealerHand.length >= 2){
+      const up = dealerHand[0];
+      const v = cardValue(up.r);
+      dealerValueTextEl.textContent = `Value: ${up.r === "A" ? "11/1" : v} (upcard)`;
+    } else {
+      const dt = handTotals(dealerHand);
+      dealerValueTextEl.textContent = `Value: ${dt.best}${dt.isSoft ? " (soft)" : ""}`;
+    }
+  }
+
+  function renderHands(){
+    handsWrapEl.innerHTML = "";
+
+    if(!hands.length){
+      const empty = document.createElement("div");
+      empty.className = "handBox";
+      empty.innerHTML = `<div class="handTop">
+        <div class="handLabel">Your hand</div>
+        <div class="handMeta">Value: 0</div>
+      </div>
+      <div class="handCards"></div>`;
+      handsWrapEl.appendChild(empty);
+      return;
+    }
+
+    hands.forEach((h, idx) => {
+      const box = document.createElement("div");
+      box.className = "handBox" + (idx === activeHand && inRound && !h.done ? " active" : "");
+
+      const t = handTotals(h.cards);
+      const label = hands.length > 1 ? `Hand ${idx+1}` : "Your hand";
+      const metaParts = [];
+      metaParts.push(`Bet: ${fmtMoney(h.bet)}`);
+      metaParts.push(`Value: ${t.best}${t.isSoft ? " (soft)" : ""}`);
+      if(h.doubled) metaParts.push("Doubled");
+      if(h.done && !h.busted) metaParts.push("Done");
+      if(h.busted) metaParts.push("Busted");
+
+      const top = document.createElement("div");
+      top.className = "handTop";
+      top.innerHTML = `<div class="handLabel">${label}${(idx===activeHand && inRound && !h.done) ? " • Playing" : ""}</div>
+                       <div class="handMeta">${metaParts.join(" • ")}</div>`;
+
+      const cards = document.createElement("div");
+      cards.className = "handCards";
+      h.cards.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "bjcard";
+        div.textContent = `${c.r}${c.s}`;
+        div.title = `${c.r}${c.s}`;
+        cards.appendChild(div);
+      });
+
+      box.appendChild(top);
+      box.appendChild(cards);
+
+      // Tap to switch active hand (only during round, only to hands not done)
+      box.addEventListener("click", () => {
+        if(!inRound) return;
+        if(hands[idx].done) return;
+        activeHand = idx;
+        redraw();
+      });
+
+      handsWrapEl.appendChild(box);
+    });
+  }
+
+  function canSplitActive(){
+    if(!inRound) return false;
+    if(splitUsed) return false;
+    if(hands.length !== 1) return false; // only allow splitting the original hand once
+    const h = hands[0];
+    if(h.cards.length !== 2) return false;
+    if(h.cards[0].r !== h.cards[1].r) return false;
+    // need funds to match bet for second hand
+    if(bankroll < h.bet) return false;
+    return true;
+  }
+
+  function canDoubleActive(){
+    if(!inRound) return false;
+    const h = hands[activeHand];
+    if(!h || h.done) return false;
+    if(h.cards.length !== 2) return false;
+    if(h.doubled) return false;
+    if(bankroll < h.bet) return false;
+    return true;
+  }
+
+  function updateButtons(){
+    const canAct = inRound;
+
+    dealBtn.disabled = canAct;
+    betInput.disabled = canAct;
+
+    hitBtn.disabled = !canAct;
+    standBtn.disabled = !canAct;
+
+    doubleBtn.disabled = !canDoubleActive();
+    splitBtn.disabled = !canSplitActive();
+
+    if(inRound){
+      roundStateTextEl.textContent = hands.length > 1
+        ? `Playing hand ${activeHand+1} of ${hands.length}`
+        : "Playing…";
+    } else {
+      roundStateTextEl.textContent = "Waiting to deal…";
+    }
+  }
+
+  function redraw(){
+    updateTopBar();
+    renderDealer();
+    renderHands();
+    updateButtons();
+  }
+
+  // ---------- Round Flow ----------
   function startNewRound(){
     if(inRound) return;
 
     const bet = Number(betInput.value || 0);
-
     if(!Number.isFinite(bet) || bet < 5 || bet % 5 !== 0){
       setMessage("Bet must be at least $5 and in $5 increments.");
       return;
@@ -295,40 +586,47 @@
       return;
     }
 
-    currentBet = bet;
+    baseBet = bet;
     bankroll -= bet;
 
-    playerHand = [];
     dealerHand = [];
-    doubled = false;
-
     dealerHoleHidden = true;
+
+    hands = [{
+      cards: [],
+      bet: bet,
+      done: false,
+      doubled: false,
+      busted: false
+    }];
+    activeHand = 0;
     inRound = true;
+    splitUsed = false;
 
     // initial deal: player, dealer, player, dealer
-    playerHand.push(drawCard());
+    hands[0].cards.push(drawCard());
     dealerHand.push(drawCard());
-    playerHand.push(drawCard());
+    hands[0].cards.push(drawCard());
     dealerHand.push(drawCard());
-
-    // check naturals
-    const pBJ = isBlackjack(playerHand);
-    const dBJ = isBlackjack(dealerHand);
 
     redraw();
+
+    // Naturals (only on original deal, before any split)
+    const pBJ = isBlackjack(hands[0].cards);
+    const dBJ = isBlackjack(dealerHand);
 
     if(pBJ || dBJ){
       dealerHoleHidden = false;
       redraw();
 
       if(pBJ && dBJ){
-        // push
-        bankroll += currentBet; // return bet
+        // push: return bet
+        bankroll += hands[0].bet;
         setMessage("Push: both have Blackjack.");
       } else if(pBJ){
-        // blackjack pays 3:2
-        const win = Math.floor(currentBet * 1.5);
-        bankroll += currentBet + win;
+        // blackjack pays 3:2 (floor to whole dollars like before)
+        const win = Math.floor(hands[0].bet * 1.5);
+        bankroll += hands[0].bet + win;
         setMessage(`Blackjack! You win ${fmtMoney(win)} (3:2).`);
       } else {
         setMessage("Dealer has Blackjack. You lose.");
@@ -341,79 +639,163 @@
     redraw();
   }
 
+  function currentHand(){
+    return hands[activeHand];
+  }
+
+  function advanceToNextHandOrDealer(){
+    // move to next unfinished hand
+    for(let i=0; i<hands.length; i++){
+      const idx = (activeHand + 1 + i) % hands.length;
+      if(!hands[idx].done){
+        activeHand = idx;
+        setMessage(hands.length > 1 ? `Your move (Hand ${activeHand+1}).` : "Your move.");
+        redraw();
+        return;
+      }
+    }
+    // all hands done -> dealer resolves
+    dealerPlayAndResolve();
+  }
+
   function playerHit(){
     if(!inRound) return;
-    playerHand.push(drawCard());
-    redraw();
+    const h = currentHand();
+    if(!h || h.done) return;
 
-    const pt = handTotals(playerHand);
+    h.cards.push(drawCard());
+    const pt = handTotals(h.cards);
+
     if(pt.best > 21){
-      dealerHoleHidden = false;
-      setMessage("Bust. You lose.");
+      h.busted = true;
+      h.done = true;
+      setMessage(hands.length > 1 ? `Hand ${activeHand+1} busts.` : "Bust. You lose.");
       redraw();
-      endRound();
+      advanceToNextHandOrDealer();
       return;
     }
+
+    setMessage(hands.length > 1 ? `Your move (Hand ${activeHand+1}).` : "Your move.");
+    redraw();
   }
 
   function playerStand(){
     if(!inRound) return;
-    dealerPlayAndResolve();
+    const h = currentHand();
+    if(!h || h.done) return;
+
+    h.done = true;
+    setMessage(hands.length > 1 ? `Hand ${activeHand+1} stands.` : "You stand.");
+    redraw();
+    advanceToNextHandOrDealer();
   }
 
   function playerDouble(){
     if(!inRound) return;
-    if(playerHand.length !== 2) return;
-    if(bankroll < currentBet) return;
+    const h = currentHand();
+    if(!h || h.done) return;
+    if(!canDoubleActive()) return;
 
-    bankroll -= currentBet;
-    currentBet *= 2;
-    doubled = true;
+    bankroll -= h.bet;
+    h.bet *= 2;
+    h.doubled = true;
 
-    playerHand.push(drawCard());
-    redraw();
+    h.cards.push(drawCard());
+    const pt = handTotals(h.cards);
 
-    const pt = handTotals(playerHand);
     if(pt.best > 21){
-      dealerHoleHidden = false;
-      setMessage("You doubled and busted. You lose.");
+      h.busted = true;
+      h.done = true;
+      setMessage(hands.length > 1 ? `Hand ${activeHand+1} doubled and busts.` : "You doubled and busted.");
       redraw();
-      endRound();
+      advanceToNextHandOrDealer();
       return;
     }
 
-    dealerPlayAndResolve();
+    // after double: auto-stand
+    h.done = true;
+    setMessage(hands.length > 1 ? `Hand ${activeHand+1} doubles and stands.` : "Double — standing.");
+    redraw();
+    advanceToNextHandOrDealer();
+  }
+
+  function playerSplit(){
+    if(!inRound) return;
+    if(!canSplitActive()) return;
+
+    // Only splitting the original single hand
+    const h = hands[0];
+
+    bankroll -= h.bet; // match bet for the new hand
+    splitUsed = true;
+
+    const c1 = h.cards[0];
+    const c2 = h.cards[1];
+
+    const handA = { cards:[c1], bet:h.bet, done:false, doubled:false, busted:false };
+    const handB = { cards:[c2], bet:h.bet, done:false, doubled:false, busted:false };
+
+    // draw one card for each split hand
+    handA.cards.push(drawCard());
+    handB.cards.push(drawCard());
+
+    hands = [handA, handB];
+    activeHand = 0;
+
+    setMessage("Split! Playing Hand 1.");
+    redraw();
+
+    // Note: No blackjack payouts after a split (common casino rule). We treat it as a normal 21.
   }
 
   function dealerPlayAndResolve(){
     dealerHoleHidden = false;
     redraw();
 
-    // Dealer draws per H17
-    while(dealerShouldHit(dealerHand)){
-      dealerHand.push(drawCard());
-      redraw();
+    // If all player hands busted, dealer doesn't need to draw (optional),
+    // but we’ll keep it simple and still resolve without extra draws.
+    const anyLive = hands.some(h => !h.busted);
+    if(anyLive){
+      while(dealerShouldHit(dealerHand)){
+        dealerHand.push(drawCard());
+        redraw();
+      }
     }
 
-    const pt = handTotals(playerHand).best;
     const dt = handTotals(dealerHand).best;
 
-    if(dt > 21){
-      // player wins
-      bankroll += currentBet * 2;
-      setMessage(`Dealer busts (${dt}). You win ${fmtMoney(currentBet)}.`);
-      endRound();
-      return;
-    }
+    // Resolve each hand independently against the same dealer total
+    let summary = [];
+    hands.forEach((h, idx) => {
+      const pt = handTotals(h.cards).best;
 
-    if(pt > dt){
-      bankroll += currentBet * 2;
-      setMessage(`You win ${fmtMoney(currentBet)}. (${pt} vs ${dt})`);
-    } else if(pt < dt){
-      setMessage(`You lose. (${pt} vs ${dt})`);
+      if(h.busted){
+        summary.push(`Hand ${idx+1}: Lose (bust)`);
+        return;
+      }
+
+      if(dt > 21){
+        bankroll += h.bet * 2;
+        summary.push(`Hand ${idx+1}: Win ${fmtMoney(h.bet)} (dealer bust)`);
+        return;
+      }
+
+      if(pt > dt){
+        bankroll += h.bet * 2;
+        summary.push(`Hand ${idx+1}: Win ${fmtMoney(h.bet)} (${pt} vs ${dt})`);
+      } else if(pt < dt){
+        summary.push(`Hand ${idx+1}: Lose (${pt} vs ${dt})`);
+      } else {
+        bankroll += h.bet; // push returns bet
+        summary.push(`Hand ${idx+1}: Push (${pt})`);
+      }
+    });
+
+    // If only one hand, make message cleaner
+    if(hands.length === 1){
+      setMessage(summary[0].replace(/^Hand 1:\s*/, ""));
     } else {
-      bankroll += currentBet; // push returns bet
-      setMessage(`Push. (${pt} vs ${dt})`);
+      setMessage(summary.join(" • "));
     }
 
     endRound();
@@ -421,12 +803,9 @@
 
   function endRound(){
     inRound = false;
-    // keep currentBet for display until next deal; set to 0 after a moment for clarity
-    setTimeout(() => {
-      currentBet = 0;
-      redraw();
-    }, 350);
-    redraw();
+    // keep dealer revealed and hands visible; reset to waiting state but don’t clear cards immediately
+    updateTopBar();
+    updateButtons();
   }
 
   // ---------- Buttons ----------
@@ -434,6 +813,7 @@
   hitBtn.addEventListener("click", playerHit);
   standBtn.addEventListener("click", playerStand);
   doubleBtn.addEventListener("click", playerDouble);
+  splitBtn.addEventListener("click", playerSplit);
 
   rebuyBtn.addEventListener("click", () => {
     bankroll += 100;
@@ -449,10 +829,14 @@
 
   // ---------- Init ----------
   shoe = shuffle(buildShoe(6));
-  playerHand = [];
   dealerHand = [];
-  currentBet = 0;
-  setMessage("Set a bet ($5 min) and click Deal.");
+  hands = [];
+  dealerHoleHidden = true;
+  inRound = false;
+  splitUsed = false;
+  baseBet = 0;
+
+  setMessage("Set a bet ($5 min) and tap Deal.");
   redraw();
 })();
 </script>
